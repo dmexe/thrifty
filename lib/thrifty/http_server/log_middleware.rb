@@ -24,12 +24,12 @@ module Thrifty::HTTP::Server
       peer   = env['HTTP_X_FORWARDED_FOR'] || env["REMOTE_ADDR"]
 
       payload = {
-        peer: peer,
-        status:   status.to_s[0..3],
         method:   env[Rack::REQUEST_METHOD],
         path:     env[Rack::PATH_INFO],
         query:    env[Rack::QUERY_STRING],
+        status:   status.to_s[0..3],
         len:      length,
+        peer:     peer,
         duration: now - began_at
       }
 

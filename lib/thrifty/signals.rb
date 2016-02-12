@@ -7,25 +7,42 @@ module Thrifty ; class Signals
 
   class << self
     def register(fn)
+      instance.install
       instance.register(fn)
+    end
+
+    def register_after(fn)
+      instance.install
+      instance.register_after(fn)
     end
   end
 
   def initialize
-    @handlers = []
-    @mutex    = Mutex.new
-    @resource = ConditionVariable.new
+    @handlers  = []
+    @after     = []
+    @mutex     = Mutex.new
+    @resource  = ConditionVariable.new
+    @installed = false
   end
 
   def install
-    %w{INT TERM}.each do |sig|
-      trap sig, &method(:shutdown)
+    unless @installed
+      %w{INT TERM}.each do |sig|
+        trap sig do
+          Thread.new{ shutdown }.join
+        end
+      end
+      @installed = true
     end
   end
 
   def wait
-    @mutex.synchronize do
-      @resource.wait(@mutex)
+    begin
+      @mutex.synchronize do
+        @resource.wait(@mutex)
+      end
+    rescue ::Interrupt
+      shutdown
     end
   end
 
@@ -33,8 +50,13 @@ module Thrifty ; class Signals
     @handlers << fn
   end
 
-  def shutdown
+  def register_after(fn)
+    @after << fn
+  end
+
+  def shutdown(sig = nil)
     @handlers.each {|fn| fn.call }
+    @after.each {|fn| fn.call }
 
     @mutex.synchronize do
       @resource.signal

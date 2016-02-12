@@ -5,7 +5,8 @@ module Thrifty::Hutch
     def initialize
       require 'hutch'
 
-      @url = ENV['RABBITMQ_URL'] || 'amqp://guest:guest@localhost:5672/'
+      @url      = ENV['RABBITMQ_URL'] || 'amqp://guest:guest@localhost:5672/'
+      @exchange = 'hutch'
 
       @lock = Mutex.new
 
@@ -16,6 +17,11 @@ module Thrifty::Hutch
 
     def with_url(url)
       @url = url
+      self
+    end
+
+    def with_exchange(name)
+      ::Hutch::Config.set(:mq_exchange, name)
       self
     end
 
@@ -30,8 +36,10 @@ module Thrifty::Hutch
     def stop
       @lock.synchronize do
         if @worker
+          ::Hutch::Logging.logger.info "stopping"
           @worker.stop
           ::Hutch.disconnect
+          ::Hutch::Logging.logger.info "stopped"
           @worker = nil
         end
       end

@@ -10,7 +10,7 @@ module Thrifty::Logger
       @queue = Queue.new
       @lock  = Mutex.new
 
-      Thrifty::Signals.register(method(:stop))
+      Thrifty::Signals.register_after(method(:stop))
     end
 
     def start
@@ -28,9 +28,11 @@ module Thrifty::Logger
     def stop
       @lock.synchronize do
         return unless @thread
-        @queue.push :shutdown
+        append(new_entry("stopping"))
+        append(:shutdown)
         @thread.join
         @thread = nil
+        App.append(new_entry("stopped"))
       end
     end
 
@@ -39,6 +41,15 @@ module Thrifty::Logger
     end
 
     private
+
+      def new_entry(msg)
+        Entry.new(
+          :info,
+          Time.now,
+          self.class,
+          msg
+        )
+      end
 
       def main_loop ; Thread.new do
         begin

@@ -15,7 +15,7 @@ module Thrifty::HTTP::Server
       ip    = options[:ip]   || DEFAULT_IP
       min   = options[:min]  || DEFAULT_MIN_TH
       max   = options[:max]  || DEFAULT_MAX_TH
-      name  = options[:name] || 'Puma'
+      name  = options[:name] || "Thrifty::HTTP::Server"
 
       @log  = Thrifty.get_logger(name)
       @bind = "#{ip}:#{port}"
